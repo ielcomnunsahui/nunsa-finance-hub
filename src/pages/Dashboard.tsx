@@ -7,28 +7,52 @@ import { CategoryPieChart } from '@/components/dashboard/CategoryPieChart';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { AddIncomeDialog } from '@/components/forms/AddIncomeDialog';
 import { AddExpenseDialog } from '@/components/forms/AddExpenseDialog';
-import { useFinance } from '@/contexts/FinanceContext';
+import { useFinanceData } from '@/hooks/useFinanceData';
 import { useToast } from '@/hooks/use-toast';
+import { generateReportPDF } from '@/lib/pdfGenerator';
 import {
   TrendingUp,
   TrendingDown,
   Calendar,
   CalendarDays,
   Wallet,
+  Loader2,
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
-  const { stats } = useFinance();
+  const { stats, income, expenses, settings, loading } = useFinanceData();
   const { toast } = useToast();
   const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
 
   const handleGenerateReport = () => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    generateReportPDF({
+      income,
+      expenses,
+      startDate: monthStart,
+      endDate: now,
+      totalIncome: stats.monthlyIncome,
+      totalExpenses: stats.monthlyExpenses,
+    }, settings);
+    
     toast({
-      title: 'Report Generation',
-      description: 'Monthly report is being generated. This feature will be available soon.',
+      title: 'Report Generated',
+      description: 'Monthly financial report has been downloaded.',
     });
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -45,7 +69,6 @@ const Dashboard: React.FC = () => {
         <StatCard
           title="Today's Income"
           value={stats.todayIncome}
-          change={stats.incomeChange}
           icon={TrendingUp}
           variant="success"
           delay={100}
@@ -53,21 +76,20 @@ const Dashboard: React.FC = () => {
         <StatCard
           title="Today's Expenses"
           value={stats.todayExpenses}
-          change={stats.expenseChange}
           icon={TrendingDown}
           variant="warning"
           delay={150}
         />
         <StatCard
-          title="Weekly Total"
-          value={stats.weeklyTotal}
+          title="Weekly Income"
+          value={stats.weeklyIncome}
           icon={Calendar}
           variant="info"
           delay={200}
         />
         <StatCard
-          title="Monthly Total"
-          value={stats.monthlyTotal}
+          title="Monthly Income"
+          value={stats.monthlyIncome}
           icon={CalendarDays}
           variant="default"
           delay={250}

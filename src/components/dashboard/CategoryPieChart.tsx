@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   PieChart,
   Pie,
@@ -7,16 +7,45 @@ import {
   Legend,
   Tooltip,
 } from 'recharts';
-import { useFinance } from '@/contexts/FinanceContext';
-import { formatCurrency } from '@/types/finance';
+import { useFinanceData } from '@/hooks/useFinanceData';
 
 interface CategoryPieChartProps {
   type: 'income' | 'expense';
 }
 
+const COLORS = [
+  'hsl(160, 84%, 35%)',
+  'hsl(38, 92%, 50%)',
+  'hsl(201, 96%, 42%)',
+  'hsl(280, 65%, 60%)',
+  'hsl(340, 75%, 55%)',
+  'hsl(25, 95%, 53%)',
+  'hsl(120, 60%, 40%)',
+  'hsl(200, 70%, 50%)',
+];
+
 export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({ type }) => {
-  const { getCategoryBreakdown } = useFinance();
-  const data = getCategoryBreakdown(type);
+  const { income, expenses } = useFinanceData();
+
+  const data = useMemo(() => {
+    const items = type === 'income' ? income : expenses;
+    const categoryMap = new Map<string, number>();
+
+    items.forEach((item) => {
+      const key = item.category_name || 'Unknown';
+      categoryMap.set(key, (categoryMap.get(key) || 0) + Number(item.amount));
+    });
+
+    return Array.from(categoryMap.entries()).map(([name, value], idx) => ({
+      name,
+      value,
+      color: COLORS[idx % COLORS.length],
+    }));
+  }, [income, expenses, type]);
+
+  const formatCurrency = (value: number) => {
+    return `₦${value.toLocaleString('en-NG', { minimumFractionDigits: 2 })}`;
+  };
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {

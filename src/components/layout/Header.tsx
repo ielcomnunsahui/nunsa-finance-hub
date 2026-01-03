@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Search, User, Menu } from 'lucide-react';
+import { Bell, Search, User, Menu, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,12 +11,26 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/useAuth';
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
 
+const roleLabels: Record<string, string> = {
+  super_admin: 'Super Admin',
+  admin: 'Admin',
+  finance_officer: 'Finance Officer',
+};
+
 export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+  const { user, role, signOut } = useAuth();
+
+  const initials = user?.email
+    ? user.email.substring(0, 2).toUpperCase()
+    : 'U';
+
   return (
     <header className="sticky top-0 z-30 h-16 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
@@ -51,12 +65,16 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               <Button variant="ghost" className="gap-2 pl-2">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                    AD
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium">Admin User</p>
-                  <p className="text-xs text-muted-foreground">Super Admin</p>
+                  <p className="text-sm font-medium truncate max-w-[150px]">
+                    {user?.email}
+                  </p>
+                  <Badge variant="secondary" className="text-xs font-normal">
+                    {role ? roleLabels[role] : 'No Role'}
+                  </Badge>
                 </div>
               </Button>
             </DropdownMenuTrigger>
@@ -67,9 +85,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem className="text-destructive" onClick={signOut}>
+                <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>

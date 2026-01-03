@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -9,12 +9,48 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { useFinance } from '@/contexts/FinanceContext';
-import { formatCurrency } from '@/types/finance';
+import { useFinanceData } from '@/hooks/useFinanceData';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 
 export const IncomeExpenseChart: React.FC = () => {
-  const { getMonthlyData } = useFinance();
-  const data = getMonthlyData();
+  const { income, expenses } = useFinanceData();
+
+  const data = useMemo(() => {
+    const months: { month: string; income: number; expense: number }[] = [];
+    const now = new Date();
+
+    for (let i = 5; i >= 0; i--) {
+      const date = subMonths(now, i);
+      const monthStart = startOfMonth(date);
+      const monthEnd = endOfMonth(date);
+      
+      const monthIncome = income
+        .filter(inc => {
+          const incDate = new Date(inc.created_at);
+          return incDate >= monthStart && incDate <= monthEnd;
+        })
+        .reduce((sum, inc) => sum + Number(inc.amount), 0);
+
+      const monthExpense = expenses
+        .filter(exp => {
+          const expDate = new Date(exp.created_at);
+          return expDate >= monthStart && expDate <= monthEnd;
+        })
+        .reduce((sum, exp) => sum + Number(exp.amount), 0);
+
+      months.push({
+        month: format(date, 'MMM'),
+        income: monthIncome,
+        expense: monthExpense,
+      });
+    }
+
+    return months;
+  }, [income, expenses]);
+
+  const formatCurrency = (value: number) => {
+    return `₦${value.toLocaleString('en-NG', { minimumFractionDigits: 2 })}`;
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {

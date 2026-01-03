@@ -9,29 +9,35 @@ import {
   Settings,
   Shield,
   Coffee,
-  Menu,
   X,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
 }
 
-const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/income', icon: TrendingUp, label: 'Income' },
-  { to: '/expenses', icon: TrendingDown, label: 'Expenses' },
-  { to: '/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/reports', icon: FileText, label: 'Reports' },
-  { to: '/audit-log', icon: Shield, label: 'Audit Log' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
-];
-
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const location = useLocation();
+  const { role, signOut } = useAuth();
+
+  const navItems = [
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/income', icon: TrendingUp, label: 'Income' },
+    { to: '/expenses', icon: TrendingDown, label: 'Expenses' },
+    { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/reports', icon: FileText, label: 'Reports' },
+    ...(role === 'super_admin' || role === 'admin'
+      ? [
+          { to: '/audit-log', icon: Shield, label: 'Audit Log' },
+          { to: '/settings', icon: Settings, label: 'Settings' },
+        ]
+      : []),
+  ];
 
   return (
     <>
@@ -101,7 +107,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-sidebar-border">
+          <div className="p-4 border-t border-sidebar-border space-y-3">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              onClick={signOut}
+            >
+              <LogOut className="h-5 w-5 mr-3" />
+              Sign Out
+            </Button>
             <div className="bg-sidebar-accent rounded-lg p-4">
               <p className="text-xs text-sidebar-foreground/60 mb-1">Al-Hikmah University</p>
               <p className="text-sm font-medium text-sidebar-foreground">NUNSA Chapter</p>
@@ -109,16 +123,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           </div>
         </div>
       </aside>
-
-      {/* Mobile toggle button */}
-      <Button
-        variant="default"
-        size="icon"
-        className="fixed bottom-4 right-4 z-30 lg:hidden shadow-lg rounded-full h-12 w-12"
-        onClick={onToggle}
-      >
-        <Menu className="h-5 w-5" />
-      </Button>
     </>
   );
 };

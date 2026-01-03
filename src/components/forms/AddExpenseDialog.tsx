@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,33 +25,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useFinance } from '@/contexts/FinanceContext';
+import { Textarea } from '@/components/ui/textarea';
+import { useFinanceData } from '@/hooks/useFinanceData';
 import { useToast } from '@/hooks/use-toast';
-import { ExpenseCategory, expenseCategoryLabels } from '@/types/finance';
-import { Check, Receipt } from 'lucide-react';
+import { Check, Receipt, Loader2 } from 'lucide-react';
 
 const expenseSchema = z.object({
   amount: z.string().min(1, 'Amount is required').refine(
     (val) => !isNaN(Number(val)) && Number(val) > 0,
     'Amount must be a positive number'
   ),
-  category: z.enum([
-    'a4_paper',
-    'spiral_front',
-    'spiral_back',
-    'spiral_slip',
-    'stationeries',
-    'bottle_water',
-    'pure_water',
-    'toner',
-    'maintenance',
-    'data_subscription',
-    'others',
-  ]),
-  customCategory: z.string().optional(),
-  description: z.string().min(1, 'Description is required').max(200, 'Description too long'),
+  categoryId: z.string().min(1, 'Category is required'),
+  description: z.string().optional(),
 });
 
 type ExpenseFormData = z.infer<typeof expenseSchema>;
@@ -65,38 +51,44 @@ export const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  const { addExpense } = useFinance();
+  const { addExpense, expenseCategories } = useFinanceData();
   const { toast } = useToast();
+  const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
       amount: '',
-      category: 'a4_paper',
-      customCategory: '',
+      categoryId: '',
       description: '',
     },
   });
 
-  const watchCategory = form.watch('category');
+  const onSubmit = async (data: ExpenseFormData) => {
+    setSubmitting(true);
+    try {
+      await addExpense(
+        Number(data.amount),
+        data.categoryId,
+        data.description
+      );
 
-  const onSubmit = (data: ExpenseFormData) => {
-    addExpense({
-      amount: Number(data.amount),
-      category: data.category as ExpenseCategory,
-      customCategory: data.category === 'others' ? data.customCategory : undefined,
-      description: data.description,
-      date: new Date(),
-      createdBy: 'admin@nunsa.edu.ng',
-    });
+      toast({
+        title: 'Expense Added Successfully',
+        description: 'The expense has been recorded.',
+      });
 
-    toast({
-      title: 'Expense Recorded',
-      description: 'The expense has been added to the records.',
-    });
-
-    form.reset();
-    onOpenChange(false);
+      form.reset();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add expense',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -104,13 +96,13 @@ export const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-display">
-            <div className="p-2 rounded-lg bg-destructive/10">
-              <Receipt className="h-5 w-5 text-destructive" />
+            <div className="p-2 rounded-lg bg-warning/10">
+              <Receipt className="h-5 w-5 text-warning" />
             </div>
             Add Expense
           </DialogTitle>
           <DialogDescription>
-            Record a new expense entry for the café.
+            Record a new expense entry for tracking purposes.
           </DialogDescription>
         </DialogHeader>
 
@@ -142,20 +134,20 @@ export const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
 
             <FormField
               control={form.control}
-              name="category"
+              name="categoryId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {Object.entries(expenseCategoryLabels).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
+                      {expenseCategories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -165,33 +157,17 @@ export const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
               )}
             />
 
-            {watchCategory === 'others' && (
-              <FormField
-                control={form.control}
-                name="customCategory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Specify Category</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter custom category" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      placeholder="Brief description of the expense"
-                      rows={3}
+                      placeholder="Add any additional notes..."
+                      rows={2}
                     />
                   </FormControl>
                   <FormMessage />
@@ -208,8 +184,12 @@ export const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="destructive" className="flex-1">
-                <Check className="h-4 w-4 mr-2" />
+              <Button type="submit" variant="gradient" className="flex-1" disabled={submitting}>
+                {submitting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4 mr-2" />
+                )}
                 Add Expense
               </Button>
             </div>

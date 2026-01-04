@@ -2,7 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Coffee, ArrowRight, Shield, BarChart3, FileText } from 'lucide-react';
+import { ArrowRight, Shield, BarChart3, FileText } from 'lucide-react';
+import nunsaLogo from '@/assets/nunsa-logo.png';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -22,9 +23,7 @@ const Index = () => {
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10">
-              <Coffee className="h-6 w-6 text-primary" />
-            </div>
+            <img src={nunsaLogo} alt="NUNSA Logo" className="h-10 w-10 rounded-full" />
             <span className="font-display font-bold text-lg">NUNSA HUI Café</span>
           </div>
           <Button onClick={() => navigate('/auth')} variant="gradient">
@@ -37,6 +36,7 @@ const Index = () => {
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4">
         <div className="container mx-auto text-center max-w-4xl">
+          <img src={nunsaLogo} alt="NUNSA Logo" className="h-24 w-24 mx-auto mb-6 rounded-full shadow-lg" />
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
             <Shield className="h-4 w-4" />
             Secure Financial Management

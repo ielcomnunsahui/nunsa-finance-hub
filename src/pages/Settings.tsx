@@ -9,7 +9,8 @@ import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useToast } from '@/hooks/use-toast';
-import { Settings as SettingsIcon, Building2, Mail, Phone, MessageCircle, FileText, Save, Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Settings as SettingsIcon, Building2, Phone, FileText, Save, Loader2, Percent } from 'lucide-react';
 
 const settingsSchema = z.object({
   cafe_name: z.string().min(1, 'Required'),
@@ -19,6 +20,7 @@ const settingsSchema = z.object({
   email: z.string().email(),
   report_recipient_email: z.string().email(),
   auto_reports_enabled: z.boolean(),
+  salary_percentage: z.coerce.number().min(0).max(100),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -26,10 +28,11 @@ type SettingsFormData = z.infer<typeof settingsSchema>;
 const Settings: React.FC = () => {
   const { settings, updateSettings, loading } = useFinanceData();
   const { toast } = useToast();
+  const { role } = useAuth();
 
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: { cafe_name: '', address: '', phone: '', whatsapp: '', email: '', report_recipient_email: '', auto_reports_enabled: true },
+    defaultValues: { cafe_name: '', address: '', phone: '', whatsapp: '', email: '', report_recipient_email: '', auto_reports_enabled: true, salary_percentage: 5 },
   });
 
   useEffect(() => {
@@ -73,6 +76,19 @@ const Settings: React.FC = () => {
               <FormField control={form.control} name="report_recipient_email" render={({ field }) => (<FormItem><FormLabel>Report Email</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
               <FormField control={form.control} name="auto_reports_enabled" render={({ field }) => (<FormItem className="flex items-center justify-between rounded-lg border p-4 mt-4"><div><FormLabel>Auto Reports</FormLabel><FormDescription>Send monthly reports automatically</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)} />
             </div>
+            {role === 'super_admin' && (
+              <div className="card-elevated p-6">
+                <div className="flex items-center gap-2 mb-4"><Percent className="h-5 w-5 text-primary" /><h2 className="font-semibold">Salary Configuration</h2></div>
+                <FormField control={form.control} name="salary_percentage" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Salary Percentage (%)</FormLabel>
+                    <FormControl><Input type="number" min={0} max={100} step={0.5} {...field} /></FormControl>
+                    <FormDescription>Percentage of monthly income used to calculate staff salary. Currently: {field.value}%</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+            )}
             <Button type="submit" variant="gradient"><Save className="h-4 w-4 mr-2" />Save Settings</Button>
           </form>
         </Form>

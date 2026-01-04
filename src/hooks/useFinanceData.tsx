@@ -39,6 +39,7 @@ export interface CafeSettings {
   logo_url: string | null;
   report_recipient_email: string;
   auto_reports_enabled: boolean;
+  salary_percentage: number;
 }
 
 export function useFinanceData() {

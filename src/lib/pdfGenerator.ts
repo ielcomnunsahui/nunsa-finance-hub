@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { IncomeRecord, ExpenseRecord, CafeSettings } from "@/hooks/useFinanceData";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 
 interface ReceiptData {
   receiptNumber: string;
@@ -10,6 +10,15 @@ interface ReceiptData {
   description?: string;
   date: Date;
   recordedBy: string;
+}
+
+interface UserSalaryData {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: string | null;
+  monthly_income: number;
+  estimated_salary: number;
 }
 
 export function generateReceiptPDF(data: ReceiptData, settings: CafeSettings | null): void {
@@ -242,4 +251,128 @@ export function generateReportPDF(data: ReportData, settings: CafeSettings | nul
   
   // Save
   doc.save(`Financial-Report-${format(data.startDate, "yyyyMMdd")}-${format(data.endDate, "yyyyMMdd")}.pdf`);
+}
+
+export function generateSalaryReportPDF(
+  users: UserSalaryData[],
+  salaryPercentage: number,
+  settings: CafeSettings | null
+): void {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+  
+  // Header
+  doc.setFillColor(5, 46, 22);
+  doc.rect(0, 0, pageWidth, 40, "F");
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.text(settings?.cafe_name || "NUNSA HUI Café", pageWidth / 2, 18, { align: "center" });
+  
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "normal");
+  doc.text("MONTHLY SALARY REPORT", pageWidth / 2, 32, { align: "center" });
+  
+  // Report Period
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(11);
+  doc.text(
+    `Period: ${format(monthStart, "dd MMM yyyy")} - ${format(monthEnd, "dd MMM yyyy")}`,
+    pageWidth / 2,
+    50,
+    { align: "center" }
+  );
+  doc.text(`Generated: ${format(now, "dd MMM yyyy, hh:mm a")}`, pageWidth / 2, 58, { align: "center" });
+  doc.text(`Salary Percentage: ${salaryPercentage}% of income generated`, pageWidth / 2, 66, { align: "center" });
+  
+  // Summary Cards
+  const summaryY = 78;
+  const cardWidth = 55;
+  const cardHeight = 25;
+  
+  const totalMonthlyIncome = users.reduce((sum, u) => sum + u.monthly_income, 0);
+  const totalSalaries = users.reduce((sum, u) => sum + u.estimated_salary, 0);
+  
+  // Total Monthly Income
+  doc.setFillColor(220, 252, 231);
+  doc.roundedRect(25, summaryY, cardWidth, cardHeight, 2, 2, "F");
+  doc.setFontSize(9);
+  doc.setTextColor(22, 101, 52);
+  doc.text("Total Monthly Income", 25 + cardWidth / 2, summaryY + 10, { align: "center" });
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text(`₦${totalMonthlyIncome.toLocaleString("en-NG")}`, 25 + cardWidth / 2, summaryY + 20, { align: "center" });
+  
+  // Total Staff
+  doc.setFillColor(219, 234, 254);
+  doc.roundedRect(85, summaryY, cardWidth, cardHeight, 2, 2, "F");
+  doc.setFontSize(9);
+  doc.setTextColor(29, 78, 216);
+  doc.text("Total Staff", 85 + cardWidth / 2, summaryY + 10, { align: "center" });
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text(`${users.length}`, 85 + cardWidth / 2, summaryY + 20, { align: "center" });
+  
+  // Total Salaries
+  doc.setFillColor(254, 249, 195);
+  doc.roundedRect(145, summaryY, cardWidth, cardHeight, 2, 2, "F");
+  doc.setFontSize(9);
+  doc.setTextColor(161, 98, 7);
+  doc.text("Total Salaries", 145 + cardWidth / 2, summaryY + 10, { align: "center" });
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text(`₦${totalSalaries.toLocaleString("en-NG")}`, 145 + cardWidth / 2, summaryY + 20, { align: "center" });
+  
+  // Salary Table
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(0, 0, 0);
+  doc.text("Staff Salary Details", 20, 118);
+  
+  const salaryData = users.map((u) => [
+    u.full_name || "No name",
+    u.email,
+    u.role || "No role",
+    `₦${u.monthly_income.toLocaleString("en-NG")}`,
+    `₦${u.estimated_salary.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`,
+  ]);
+  
+  autoTable(doc, {
+    startY: 123,
+    head: [["Name", "Email", "Role", "Monthly Income", `Salary (${salaryPercentage}%)`]],
+    body: salaryData.length > 0 ? salaryData : [["No staff records", "", "", "", ""]],
+    theme: "striped",
+    headStyles: { fillColor: [5, 46, 22] },
+    styles: { fontSize: 9 },
+    columnStyles: { 
+      3: { halign: "right" },
+      4: { halign: "right" },
+    },
+  });
+  
+  // Totals row
+  const finalY = (doc as any).lastAutoTable.finalY + 5;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("TOTAL PAYROLL:", 20, finalY + 10);
+  doc.setTextColor(22, 101, 52);
+  doc.text(`₦${totalSalaries.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`, pageWidth - 20, finalY + 10, { align: "right" });
+  
+  // Footer
+  const pageHeight = doc.internal.pageSize.getHeight();
+  doc.setFontSize(8);
+  doc.setTextColor(100, 100, 100);
+  doc.text(
+    `${settings?.cafe_name || "NUNSA HUI Café"} | ${settings?.address || ""} | ${settings?.email || ""}`,
+    pageWidth / 2,
+    pageHeight - 10,
+    { align: "center" }
+  );
+  
+  // Save
+  doc.save(`Salary-Report-${format(now, "MMMM-yyyy")}.pdf`);
 }

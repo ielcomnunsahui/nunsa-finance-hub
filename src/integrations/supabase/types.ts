@@ -51,6 +51,7 @@ export type Database = {
           logo_url: string | null
           phone: string | null
           report_recipient_email: string | null
+          salary_percentage: number
           updated_at: string | null
           whatsapp: string | null
         }
@@ -63,6 +64,7 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           report_recipient_email?: string | null
+          salary_percentage?: number
           updated_at?: string | null
           whatsapp?: string | null
         }
@@ -75,6 +77,7 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           report_recipient_email?: string | null
+          salary_percentage?: number
           updated_at?: string | null
           whatsapp?: string | null
         }

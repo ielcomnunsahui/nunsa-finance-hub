@@ -14,6 +14,7 @@ import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
 import AuditLog from "./pages/AuditLog";
 import Settings from "./pages/Settings";
+import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -81,6 +82,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <UserManagement />
                 </ProtectedRoute>
               }
             />

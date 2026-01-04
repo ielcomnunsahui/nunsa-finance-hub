@@ -8,13 +8,14 @@ import {
   FileText,
   Settings,
   Shield,
-  Coffee,
+  Users,
   X,
   LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import nunsaLogo from '@/assets/nunsa-logo.png';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -36,6 +37,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           { to: '/audit-log', icon: Shield, label: 'Audit Log' },
           { to: '/settings', icon: Settings, label: 'Settings' },
         ]
+      : []),
+    ...(role === 'super_admin'
+      ? [{ to: '/users', icon: Users, label: 'User Management' }]
       : []),
   ];
 
@@ -61,9 +65,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           <div className="p-6 border-b border-sidebar-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-sidebar-primary/10">
-                  <Coffee className="h-6 w-6 text-sidebar-primary" />
-                </div>
+                <img 
+                  src={nunsaLogo} 
+                  alt="NUNSA Logo" 
+                  className="h-12 w-12 rounded-full bg-white p-0.5"
+                />
                 <div>
                   <h1 className="font-display font-bold text-lg text-sidebar-foreground">
                     NUNSA HUI

@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Coffee, Lock, Mail, User } from "lucide-react";
+import { Lock, Mail, User } from "lucide-react";
+import nunsaLogo from "@/assets/nunsa-logo.png";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -94,8 +95,8 @@ export default function Auth() {
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-2xl border-primary/10">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-            <Coffee className="w-8 h-8 text-primary" />
+          <div className="mx-auto">
+            <img src={nunsaLogo} alt="NUNSA Logo" className="w-20 h-20 mx-auto" />
           </div>
           <CardTitle className="text-2xl font-bold">NUNSA HUI Café</CardTitle>
           <CardDescription>Financial Management System</CardDescription>

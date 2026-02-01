@@ -2,8 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Shield, BarChart3, FileText } from 'lucide-react';
+import { ArrowRight, Shield, BarChart3, FileText, Sparkles } from 'lucide-react';
 import nunsaLogo from '@/assets/nunsa-logo.png';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -54,6 +55,12 @@ const Index = () => {
               Get Started
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
+            <Link to="/features">
+              <Button size="lg" variant="outline" className="text-lg px-8">
+                <Sparkles className="mr-2 h-5 w-5" />
+                View Demo
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

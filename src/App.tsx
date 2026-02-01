@@ -12,6 +12,8 @@ import Income from "./pages/Income";
 import Expenses from "./pages/Expenses";
 import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
+import MonthlyReports from "./pages/MonthlyReports";
+import Features from "./pages/Features";
 import AuditLog from "./pages/AuditLog";
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
@@ -29,6 +31,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/features" element={<Features />} />
             <Route
               path="/dashboard"
               element={
@@ -66,6 +69,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Reports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/monthly-reports"
+              element={
+                <ProtectedRoute>
+                  <MonthlyReports />
                 </ProtectedRoute>
               }
             />

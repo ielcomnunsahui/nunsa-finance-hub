@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { QuickActions } from '@/components/dashboard/QuickActions';
@@ -7,6 +7,7 @@ import { CategoryPieChart } from '@/components/dashboard/CategoryPieChart';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { AddIncomeDialog } from '@/components/forms/AddIncomeDialog';
 import { AddExpenseDialog } from '@/components/forms/AddExpenseDialog';
+import { OnboardingTour } from '@/components/OnboardingTour';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useToast } from '@/hooks/use-toast';
 import { generateReportPDF } from '@/lib/pdfGenerator';
@@ -19,11 +20,31 @@ import {
   Loader2,
 } from 'lucide-react';
 
+const TOUR_STORAGE_KEY = 'nunsa-onboarding-complete';
+
 const Dashboard: React.FC = () => {
   const { stats, income, expenses, settings, loading } = useFinanceData();
   const { toast } = useToast();
   const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+
+  useEffect(() => {
+    // Check if user has completed the onboarding tour
+    const tourComplete = localStorage.getItem(TOUR_STORAGE_KEY);
+    if (!tourComplete && !loading) {
+      setShowTour(true);
+    }
+  }, [loading]);
+
+  const handleTourComplete = () => {
+    localStorage.setItem(TOUR_STORAGE_KEY, 'true');
+    setShowTour(false);
+    toast({
+      title: 'Welcome!',
+      description: 'You\'re all set to start managing finances.',
+    });
+  };
 
   const handleGenerateReport = () => {
     const now = new Date();
@@ -132,6 +153,12 @@ const Dashboard: React.FC = () => {
       <AddExpenseDialog
         open={expenseDialogOpen}
         onOpenChange={setExpenseDialogOpen}
+      />
+      
+      {/* Onboarding Tour */}
+      <OnboardingTour
+        isOpen={showTour}
+        onComplete={handleTourComplete}
       />
     </DashboardLayout>
   );

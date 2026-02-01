@@ -10,7 +10,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Settings as SettingsIcon, Building2, Phone, FileText, Save, Loader2, Percent } from 'lucide-react';
+import { Settings as SettingsIcon, Building2, Phone, FileText, Save, Loader2, Percent, RotateCcw } from 'lucide-react';
 
 const settingsSchema = z.object({
   cafe_name: z.string().min(1, 'Required'),
@@ -46,6 +46,11 @@ const Settings: React.FC = () => {
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
     }
+  };
+
+  const handleRestartTour = () => {
+    localStorage.removeItem('nunsa-onboarding-complete');
+    toast({ title: 'Tour Reset', description: 'Go to Dashboard to see the onboarding tour again.' });
   };
 
   if (loading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></DashboardLayout>;
@@ -89,6 +94,14 @@ const Settings: React.FC = () => {
                 )} />
               </div>
             )}
+            <div className="card-elevated p-6">
+              <div className="flex items-center gap-2 mb-4"><RotateCcw className="h-5 w-5 text-primary" /><h2 className="font-semibold">Onboarding</h2></div>
+              <p className="text-sm text-muted-foreground mb-4">Restart the onboarding tour to learn about all features.</p>
+              <Button type="button" variant="outline" onClick={handleRestartTour}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Restart Onboarding Tour
+              </Button>
+            </div>
             <Button type="submit" variant="gradient"><Save className="h-4 w-4 mr-2" />Save Settings</Button>
           </form>
         </Form>

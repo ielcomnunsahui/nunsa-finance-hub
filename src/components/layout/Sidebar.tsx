@@ -6,6 +6,7 @@ import {
   TrendingDown,
   BarChart3,
   FileText,
+  Calendar,
   Settings,
   Shield,
   Users,
@@ -32,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     { to: '/expenses', icon: TrendingDown, label: 'Expenses' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics' },
     { to: '/reports', icon: FileText, label: 'Reports' },
+    { to: '/monthly-reports', icon: Calendar, label: 'Monthly Reports' },
     ...(role === 'super_admin' || role === 'admin'
       ? [
           { to: '/audit-log', icon: Shield, label: 'Audit Log' },

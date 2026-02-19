@@ -13,8 +13,10 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Package, Plus, ShoppingCart, TrendingDown, AlertTriangle, Archive, History } from 'lucide-react';
+import { Package, Plus, ShoppingCart, TrendingDown, AlertTriangle, Archive, History, Download, Database } from 'lucide-react';
 import { format } from 'date-fns';
+import { useFinanceData } from '@/hooks/useFinanceData';
+import { generateInventoryReportPDF } from '@/lib/inventoryPdfGenerator';
 
 interface InventoryItem {
   id: string;
@@ -46,6 +48,7 @@ const CATEGORIES = ['Beverages', 'Stationery', 'Equipment', 'Food', 'General'];
 
 const Inventory: React.FC = () => {
   const { user, role } = useAuth();
+  const { settings } = useFinanceData();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,6 +142,43 @@ const Inventory: React.FC = () => {
     fetchData();
   };
 
+  const handleDownloadReport = () => {
+    const txsForReport = transactions.map(tx => ({
+      created_at: tx.created_at,
+      item_name: tx.item_name || 'Unknown',
+      transaction_type: tx.transaction_type,
+      quantity: tx.quantity,
+      note: tx.note,
+    }));
+    generateInventoryReportPDF(items, txsForReport, settings);
+    toast({ title: 'Report Downloaded', description: 'Inventory report PDF has been generated.' });
+  };
+
+  const DEFAULT_ITEMS = [
+    { name: 'Bottle Water', category: 'Beverages', unit: 'pieces', initial_stock: 50, low_stock_threshold: 5, cost_price: 100, sell_price: 150 },
+    { name: 'Sachet Water', category: 'Beverages', unit: 'pieces', initial_stock: 100, low_stock_threshold: 10, cost_price: 20, sell_price: 30 },
+    { name: 'Pens', category: 'Stationery', unit: 'pieces', initial_stock: 50, low_stock_threshold: 10, cost_price: 50, sell_price: 100 },
+    { name: 'Spiral Bind', category: 'Stationery', unit: 'pieces', initial_stock: 30, low_stock_threshold: 5, cost_price: 200, sell_price: 500 },
+    { name: 'Eraser', category: 'Stationery', unit: 'pieces', initial_stock: 30, low_stock_threshold: 5, cost_price: 50, sell_price: 100 },
+    { name: 'Stapler', category: 'Stationery', unit: 'pieces', initial_stock: 10, low_stock_threshold: 3, cost_price: 500, sell_price: 800 },
+    { name: 'Laptop', category: 'Equipment', unit: 'units', initial_stock: 2, low_stock_threshold: 1, cost_price: 150000, sell_price: 0 },
+    { name: 'Printer', category: 'Equipment', unit: 'units', initial_stock: 2, low_stock_threshold: 1, cost_price: 50000, sell_price: 0 },
+    { name: 'Turner', category: 'General', unit: 'pieces', initial_stock: 5, low_stock_threshold: 2, cost_price: 300, sell_price: 0 },
+    { name: 'Paper (A4 Ream)', category: 'Stationery', unit: 'packs', initial_stock: 20, low_stock_threshold: 5, cost_price: 2500, sell_price: 3000 },
+    { name: 'Drinks (Soft)', category: 'Beverages', unit: 'pieces', initial_stock: 48, low_stock_threshold: 10, cost_price: 150, sell_price: 250 },
+  ];
+
+  const handleAddDefaults = async () => {
+    const toInsert = DEFAULT_ITEMS.map(item => ({
+      ...item,
+      current_stock: item.initial_stock,
+    }));
+    const { error } = await supabase.from('inventory_items').insert(toInsert);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    toast({ title: 'Default items added', description: `${DEFAULT_ITEMS.length} items have been added to inventory.` });
+    fetchData();
+  };
+
   const lowStockItems = items.filter(i => i.current_stock <= i.low_stock_threshold);
   const outOfStock = items.filter(i => i.current_stock === 0);
   const totalValue = items.reduce((s, i) => s + i.current_stock * i.sell_price, 0);
@@ -158,12 +198,23 @@ const Inventory: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Inventory Management</h1>
             <p className="text-muted-foreground">Track stock, purchases, and sales</p>
           </div>
-          {isAdmin && (
+          <div className="flex gap-2 flex-wrap">
+            {items.length === 0 && isAdmin && (
+              <Button variant="outline" onClick={handleAddDefaults}>
+                <Database className="h-4 w-4 mr-2" />Add Default Items
+              </Button>
+            )}
+            {items.length > 0 && (
+              <Button variant="outline" onClick={handleDownloadReport}>
+                <Download className="h-4 w-4 mr-2" />Download Report
+              </Button>
+            )}
+            {isAdmin && (
             <Dialog open={addItemOpen} onOpenChange={setAddItemOpen}>
               <DialogTrigger asChild>
                 <Button><Plus className="h-4 w-4 mr-2" />Add Item</Button>
@@ -200,9 +251,9 @@ const Inventory: React.FC = () => {
                 </div>
               </DialogContent>
             </Dialog>
-          )}
+            )}
+          </div>
         </div>
-
         {/* Low Stock Warnings */}
         {lowStockItems.length > 0 && (
           <Card className="border-orange-500/50 bg-orange-500/5">

@@ -10,6 +10,7 @@ import {
   Settings,
   Shield,
   Users,
+  Package,
   X,
   LogOut,
 } from 'lucide-react';
@@ -32,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     { to: '/income', icon: TrendingUp, label: 'Income' },
     { to: '/expenses', icon: TrendingDown, label: 'Expenses' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/inventory', icon: Package, label: 'Inventory' },
     { to: '/reports', icon: FileText, label: 'Reports' },
     { to: '/monthly-reports', icon: Calendar, label: 'Monthly Reports' },
     ...(role === 'super_admin' || role === 'admin'

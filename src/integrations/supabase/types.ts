@@ -195,6 +195,86 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_items: {
+        Row: {
+          category: string
+          cost_price: number | null
+          created_at: string | null
+          current_stock: number
+          id: string
+          initial_stock: number
+          low_stock_threshold: number
+          name: string
+          sell_price: number | null
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string
+          cost_price?: number | null
+          created_at?: string | null
+          current_stock?: number
+          id?: string
+          initial_stock?: number
+          low_stock_threshold?: number
+          name: string
+          sell_price?: number | null
+          unit?: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          cost_price?: number | null
+          created_at?: string | null
+          current_stock?: number
+          id?: string
+          initial_stock?: number
+          low_stock_threshold?: number
+          name?: string
+          sell_price?: number | null
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      inventory_transactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_id: string
+          note: string | null
+          quantity: number
+          recorded_by: string
+          transaction_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_id: string
+          note?: string | null
+          quantity: number
+          recorded_by: string
+          transaction_type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_id?: string
+          note?: string | null
+          quantity?: number
+          recorded_by?: string
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_transactions_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

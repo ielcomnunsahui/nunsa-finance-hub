@@ -17,6 +17,7 @@ import Features from "./pages/Features";
 import AuditLog from "./pages/AuditLog";
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
+import Inventory from "./pages/Inventory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <MonthlyReports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory"
+              element={
+                <ProtectedRoute>
+                  <Inventory />
                 </ProtectedRoute>
               }
             />

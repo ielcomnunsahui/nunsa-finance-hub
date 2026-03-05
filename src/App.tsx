@@ -16,6 +16,7 @@ import MonthlyReports from "./pages/MonthlyReports";
 import Features from "./pages/Features";
 import AuditLog from "./pages/AuditLog";
 import Settings from "./pages/Settings";
+import Salaries from "./pages/Salaries";
 import UserManagement from "./pages/UserManagement";
 import Inventory from "./pages/Inventory";
 import NotFound from "./pages/NotFound";

@@ -37,6 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     { to: '/inventory', icon: Package, label: 'Inventory' },
     { to: '/reports', icon: FileText, label: 'Reports' },
     { to: '/monthly-reports', icon: Calendar, label: 'Monthly Reports' },
+    { to: '/salaries', icon: Wallet, label: 'Salaries' },
     ...(role === 'super_admin' || role === 'admin'
       ? [
           { to: '/audit-log', icon: Shield, label: 'Audit Log' },

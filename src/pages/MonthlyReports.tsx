@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useAuth } from '@/hooks/useAuth';
-import { generateMonthlyReportPDF, generateMonthlySalaryReportPDF } from '@/lib/pdfGenerator';
+import { generateMonthlyReportPDF, generateMonthlySalaryReportPDF, SalaryRecordForPDF } from '@/lib/pdfGenerator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { FileText, Download, Mail, Calendar, Users, Loader2, Send } from 'lucide-react';

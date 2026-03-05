@@ -302,6 +302,62 @@ export type Database = {
         }
         Relationships: []
       }
+      salary_records: {
+        Row: {
+          added_to_expenses: boolean
+          created_at: string | null
+          expense_id: string | null
+          id: string
+          is_paid: boolean
+          month: number
+          monthly_income: number
+          salary_amount: number
+          salary_tier: string
+          updated_at: string | null
+          user_id: string
+          user_name: string
+          year: number
+        }
+        Insert: {
+          added_to_expenses?: boolean
+          created_at?: string | null
+          expense_id?: string | null
+          id?: string
+          is_paid?: boolean
+          month: number
+          monthly_income?: number
+          salary_amount?: number
+          salary_tier?: string
+          updated_at?: string | null
+          user_id: string
+          user_name: string
+          year: number
+        }
+        Update: {
+          added_to_expenses?: boolean
+          created_at?: string | null
+          expense_id?: string | null
+          id?: string
+          is_paid?: boolean
+          month?: number
+          monthly_income?: number
+          salary_amount?: number
+          salary_tier?: string
+          updated_at?: string | null
+          user_id?: string
+          user_name?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_records_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null

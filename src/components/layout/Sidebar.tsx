@@ -11,6 +11,7 @@ import {
   Shield,
   Users,
   Package,
+  Wallet,
   X,
   LogOut,
 } from 'lucide-react';

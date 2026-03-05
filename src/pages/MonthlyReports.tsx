@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useAuth } from '@/hooks/useAuth';
-import { generateMonthlyReportPDF, generateMonthlySalaryReportPDF } from '@/lib/pdfGenerator';
+import { generateMonthlyReportPDF, generateMonthlySalaryReportPDF, SalaryRecordForPDF } from '@/lib/pdfGenerator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { FileText, Download, Mail, Calendar, Users, Loader2, Send } from 'lucide-react';
@@ -57,13 +57,33 @@ const MonthlyReports: React.FC = () => {
     return { monthIncome, monthExpenses, totalIncome, totalExpenses, monthStart, monthEnd };
   };
 
-  const handleDownloadFinancialReport = () => {
+  const handleDownloadFinancialReport = async () => {
     const { monthIncome, monthExpenses, totalIncome, totalExpenses, monthStart, monthEnd } = getMonthData();
+    
+    // Fetch salary records for this month
+    const monthNum = parseInt(selectedMonth);
+    const yearNum = parseInt(selectedYear);
+    const { data: salaryData } = await supabase
+      .from('salary_records')
+      .select('*')
+      .eq('month', monthNum)
+      .eq('year', yearNum);
+    
+    const salaryRecords: SalaryRecordForPDF[] = (salaryData || []).map((r: any) => ({
+      user_name: r.user_name,
+      month: r.month,
+      salary_amount: r.salary_amount,
+      salary_tier: r.salary_tier,
+      is_paid: r.is_paid,
+      added_to_expenses: r.added_to_expenses,
+    }));
+
     generateMonthlyReportPDF(
       { income: monthIncome, expenses: monthExpenses, startDate: monthStart, endDate: monthEnd, totalIncome, totalExpenses },
       settings,
       MONTHS[parseInt(selectedMonth) - 1],
-      parseInt(selectedYear)
+      parseInt(selectedYear),
+      salaryRecords
     );
     toast({ title: 'Report Downloaded', description: `${MONTHS[parseInt(selectedMonth) - 1]} ${selectedYear} financial report downloaded.` });
   };

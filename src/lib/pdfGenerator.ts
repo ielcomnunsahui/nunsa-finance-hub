@@ -21,12 +21,21 @@ interface UserSalaryData {
   estimated_salary: number;
 }
 
+export interface SalaryRecordForPDF {
+  user_name: string;
+  month: number;
+  salary_amount: number;
+  salary_tier: string;
+  is_paid: boolean;
+  added_to_expenses: boolean;
+}
+
 export function generateReceiptPDF(data: ReceiptData, settings: CafeSettings | null): void {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   
   // Header
-  doc.setFillColor(5, 46, 22); // Emerald dark
+  doc.setFillColor(5, 46, 22);
   doc.rect(0, 0, pageWidth, 45, "F");
   
   doc.setTextColor(255, 255, 255);
@@ -39,13 +48,11 @@ export function generateReceiptPDF(data: ReceiptData, settings: CafeSettings | n
   doc.text(settings?.address || "Al-Hikmah University, Ilorin", pageWidth / 2, 30, { align: "center" });
   doc.text(`Tel: ${settings?.phone || "N/A"} | Email: ${settings?.email || "N/A"}`, pageWidth / 2, 38, { align: "center" });
   
-  // Receipt Title
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
   doc.text("PAYMENT RECEIPT", pageWidth / 2, 60, { align: "center" });
   
-  // Receipt Details
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
   
@@ -53,7 +60,6 @@ export function generateReceiptPDF(data: ReceiptData, settings: CafeSettings | n
   const leftMargin = 25;
   const rightMargin = pageWidth - 25;
   
-  // Receipt number and date
   doc.setFont("helvetica", "bold");
   doc.text("Receipt No:", leftMargin, startY);
   doc.setFont("helvetica", "normal");
@@ -64,12 +70,10 @@ export function generateReceiptPDF(data: ReceiptData, settings: CafeSettings | n
   doc.setFont("helvetica", "normal");
   doc.text(format(data.date, "dd MMM yyyy, hh:mm a"), rightMargin - 60 + 15, startY);
   
-  // Horizontal line
   doc.setDrawColor(200, 200, 200);
   doc.line(leftMargin, startY + 10, rightMargin, startY + 10);
   
-  // Amount Box
-  doc.setFillColor(240, 253, 244); // Light green
+  doc.setFillColor(240, 253, 244);
   doc.roundedRect(leftMargin, startY + 20, pageWidth - 50, 35, 3, 3, "F");
   
   doc.setFontSize(14);
@@ -80,7 +84,6 @@ export function generateReceiptPDF(data: ReceiptData, settings: CafeSettings | n
   doc.setFontSize(28);
   doc.text(`₦${data.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`, pageWidth / 2, startY + 48, { align: "center" });
   
-  // Details
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(11);
   
@@ -103,7 +106,6 @@ export function generateReceiptPDF(data: ReceiptData, settings: CafeSettings | n
   doc.setFont("helvetica", "normal");
   doc.text(data.recordedBy, leftMargin + 38, detailsY + 24);
   
-  // Footer
   doc.setDrawColor(200, 200, 200);
   doc.line(leftMargin, 250, rightMargin, 250);
   
@@ -112,7 +114,6 @@ export function generateReceiptPDF(data: ReceiptData, settings: CafeSettings | n
   doc.text("This is a computer-generated receipt and is valid without signature.", pageWidth / 2, 260, { align: "center" });
   doc.text("Thank you for your patronage!", pageWidth / 2, 268, { align: "center" });
   
-  // Save
   doc.save(`Receipt-${data.receiptNumber}.pdf`);
 }
 
@@ -147,9 +148,7 @@ export function generateReportPDF(data: ReportData, settings: CafeSettings | nul
   doc.setFontSize(11);
   doc.text(
     `Period: ${format(data.startDate, "dd MMM yyyy")} - ${format(data.endDate, "dd MMM yyyy")}`,
-    pageWidth / 2,
-    50,
-    { align: "center" }
+    pageWidth / 2, 50, { align: "center" }
   );
   doc.text(`Generated: ${format(new Date(), "dd MMM yyyy, hh:mm a")}`, pageWidth / 2, 58, { align: "center" });
   
@@ -244,9 +243,7 @@ export function generateReportPDF(data: ReportData, settings: CafeSettings | nul
   doc.setTextColor(100, 100, 100);
   doc.text(
     `${settings?.cafe_name || "NUNSA HUI Café"} | ${settings?.address || ""} | ${settings?.email || ""}`,
-    pageWidth / 2,
-    pageHeight - 10,
-    { align: "center" }
+    pageWidth / 2, pageHeight - 10, { align: "center" }
   );
   
   // Save
@@ -266,7 +263,8 @@ export function generateMonthlyReportPDF(
   data: ReportData,
   settings: CafeSettings | null,
   monthName: string,
-  year: number
+  year: number,
+  salaryRecords?: SalaryRecordForPDF[]
 ): void {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -284,14 +282,11 @@ export function generateMonthlyReportPDF(
   doc.setFont("helvetica", "normal");
   doc.text(`${monthName.toUpperCase()} ${year} FINANCIAL REPORT`, pageWidth / 2, 32, { align: "center" });
   
-  // Report Period
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(11);
   doc.text(
     `Period: ${format(data.startDate, "dd MMM yyyy")} - ${format(data.endDate, "dd MMM yyyy")}`,
-    pageWidth / 2,
-    50,
-    { align: "center" }
+    pageWidth / 2, 50, { align: "center" }
   );
   doc.text(`Generated: ${format(new Date(), "dd MMM yyyy, hh:mm a")}`, pageWidth / 2, 58, { align: "center" });
   
@@ -300,7 +295,6 @@ export function generateMonthlyReportPDF(
   const cardWidth = 55;
   const cardHeight = 25;
   
-  // Total Income
   doc.setFillColor(220, 252, 231);
   doc.roundedRect(20, summaryY, cardWidth, cardHeight, 2, 2, "F");
   doc.setFontSize(9);
@@ -310,7 +304,6 @@ export function generateMonthlyReportPDF(
   doc.setFont("helvetica", "bold");
   doc.text(`₦${data.totalIncome.toLocaleString("en-NG")}`, 20 + cardWidth / 2, summaryY + 20, { align: "center" });
   
-  // Total Expenses
   doc.setFillColor(254, 226, 226);
   doc.roundedRect(80, summaryY, cardWidth, cardHeight, 2, 2, "F");
   doc.setFontSize(9);
@@ -320,7 +313,6 @@ export function generateMonthlyReportPDF(
   doc.setFont("helvetica", "bold");
   doc.text(`₦${data.totalExpenses.toLocaleString("en-NG")}`, 80 + cardWidth / 2, summaryY + 20, { align: "center" });
   
-  // Net Balance
   const netBalance = data.totalIncome - data.totalExpenses;
   const balanceColor = netBalance >= 0 ? [220, 252, 231] : [254, 226, 226];
   const textColor = netBalance >= 0 ? [22, 101, 52] : [153, 27, 27];
@@ -379,19 +371,103 @@ export function generateMonthlyReportPDF(
     styles: { fontSize: 9 },
     columnStyles: { 3: { halign: "right" } },
   });
+
+  // Salary Summary Section
+  if (salaryRecords && salaryRecords.length > 0) {
+    const salaryStartY = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Check if we need a new page
+    if (salaryStartY > 240) {
+      doc.addPage();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Staff Salary Breakdown", 20, 20);
+      
+      const totalSalaries = salaryRecords.reduce((sum, r) => sum + Number(r.salary_amount), 0);
+      const paidCount = salaryRecords.filter(r => r.is_paid).length;
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Total Salary Cost: ₦${totalSalaries.toLocaleString("en-NG")}  |  ${paidCount}/${salaryRecords.length} Paid`, 20, 28);
+
+      const salaryData = salaryRecords.map(r => [
+        r.user_name,
+        `₦${Number(r.salary_amount).toLocaleString("en-NG")}`,
+        r.salary_tier,
+        r.is_paid ? (r.added_to_expenses ? "Expensed" : "Paid") : "Pending",
+      ]);
+
+      autoTable(doc, {
+        startY: 33,
+        head: [["Staff Name", "Salary", "Tier", "Status"]],
+        body: salaryData,
+        theme: "striped",
+        headStyles: { fillColor: [107, 70, 193] },
+        styles: { fontSize: 9 },
+        columnStyles: { 1: { halign: "right" } },
+      });
+
+      const salaryFinalY = (doc as any).lastAutoTable.finalY + 8;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.text("TOTAL SALARY COST:", 20, salaryFinalY);
+      doc.setTextColor(153, 27, 27);
+      doc.text(`₦${totalSalaries.toLocaleString("en-NG")}`, pageWidth - 20, salaryFinalY, { align: "right" });
+    } else {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Staff Salary Breakdown", 20, salaryStartY);
+      
+      const totalSalaries = salaryRecords.reduce((sum, r) => sum + Number(r.salary_amount), 0);
+      const paidCount = salaryRecords.filter(r => r.is_paid).length;
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Total Salary Cost: ₦${totalSalaries.toLocaleString("en-NG")}  |  ${paidCount}/${salaryRecords.length} Paid`, 20, salaryStartY + 8);
+
+      const salaryData = salaryRecords.map(r => [
+        r.user_name,
+        `₦${Number(r.salary_amount).toLocaleString("en-NG")}`,
+        r.salary_tier,
+        r.is_paid ? (r.added_to_expenses ? "Expensed" : "Paid") : "Pending",
+      ]);
+
+      autoTable(doc, {
+        startY: salaryStartY + 13,
+        head: [["Staff Name", "Salary", "Tier", "Status"]],
+        body: salaryData,
+        theme: "striped",
+        headStyles: { fillColor: [107, 70, 193] },
+        styles: { fontSize: 9 },
+        columnStyles: { 1: { halign: "right" } },
+      });
+
+      const salaryFinalY = (doc as any).lastAutoTable.finalY + 8;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.text("TOTAL SALARY COST:", 20, salaryFinalY);
+      doc.setTextColor(153, 27, 27);
+      doc.text(`₦${totalSalaries.toLocaleString("en-NG")}`, pageWidth - 20, salaryFinalY, { align: "right" });
+    }
+  }
   
   // Footer
-  const pageHeight = doc.internal.pageSize.getHeight();
-  doc.setFontSize(8);
-  doc.setTextColor(100, 100, 100);
-  doc.text(
-    `${settings?.cafe_name || "NUNSA HUI Café"} | ${settings?.address || ""} | ${settings?.email || ""}`,
-    pageWidth / 2,
-    pageHeight - 10,
-    { align: "center" }
-  );
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(
+      `${settings?.cafe_name || "NUNSA HUI Café"} | ${settings?.address || ""} | ${settings?.email || ""}`,
+      pageWidth / 2, pageHeight - 10, { align: "center" }
+    );
+  }
   
-  // Save
   doc.save(`Financial-Report-${monthName}-${year}.pdf`);
 }
 
@@ -504,9 +580,7 @@ export function generateMonthlySalaryReportPDF(
   doc.setTextColor(100, 100, 100);
   doc.text(
     `${settings?.cafe_name || "NUNSA HUI Café"} | ${settings?.address || ""} | ${settings?.email || ""}`,
-    pageWidth / 2,
-    pageHeight - 10,
-    { align: "center" }
+    pageWidth / 2, pageHeight - 10, { align: "center" }
   );
   
   // Save

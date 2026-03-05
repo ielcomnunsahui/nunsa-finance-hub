@@ -7,12 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Wallet, Plus, TrendingUp, AlertCircle, CheckCircle2, Loader2, DollarSign } from 'lucide-react';
-import { format } from 'date-fns';
+import { Wallet, Plus, TrendingUp, AlertCircle, CheckCircle2, Loader2, DollarSign, Pencil, Trash2 } from 'lucide-react';
 
 interface SalaryRecord {
   id: string;
@@ -25,6 +25,7 @@ interface SalaryRecord {
   salary_tier: string;
   is_paid: boolean;
   added_to_expenses: boolean;
+  expense_id: string | null;
   created_at: string;
 }
 
@@ -47,6 +48,9 @@ const Salaries: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [editingRecord, setEditingRecord] = useState<SalaryRecord | null>(null);
+  const [deleteRecord, setDeleteRecord] = useState<SalaryRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Form state
   const [formUserName, setFormUserName] = useState('');
@@ -98,7 +102,30 @@ const Salaries: React.FC = () => {
     setFormSalary(amount.toString());
   };
 
-  const handleAddRecord = async () => {
+  const resetForm = () => {
+    setFormUserName('');
+    setFormUserId('');
+    setFormMonth((new Date().getMonth() + 1).toString());
+    setFormYear(new Date().getFullYear().toString());
+    setFormIncome('');
+    setFormSalary('');
+    setFormIsPaid(false);
+    setEditingRecord(null);
+  };
+
+  const openEditDialog = (record: SalaryRecord) => {
+    setEditingRecord(record);
+    setFormUserName(record.user_name);
+    setFormUserId(record.user_id);
+    setFormMonth(record.month.toString());
+    setFormYear(record.year.toString());
+    setFormIncome(record.monthly_income.toString());
+    setFormSalary(record.salary_amount.toString());
+    setFormIsPaid(record.is_paid);
+    setDialogOpen(true);
+  };
+
+  const handleSaveRecord = async () => {
     if (!formUserName || !formMonth || !formYear || !formSalary) {
       toast({ title: 'Error', description: 'Please fill all required fields', variant: 'destructive' });
       return;
@@ -106,7 +133,7 @@ const Salaries: React.FC = () => {
 
     setSaving(true);
     try {
-      const { error } = await supabase.from('salary_records').insert({
+      const recordData = {
         user_id: formUserId || '00000000-0000-0000-0000-000000000000',
         user_name: formUserName,
         month: parseInt(formMonth),
@@ -115,16 +142,33 @@ const Salaries: React.FC = () => {
         salary_amount: parseFloat(formSalary),
         salary_tier: getSalaryTier(parseFloat(formIncome) || 0).tier,
         is_paid: formIsPaid,
-      });
+      };
 
-      if (error) throw error;
+      if (editingRecord) {
+        const { error } = await supabase
+          .from('salary_records')
+          .update(recordData)
+          .eq('id', editingRecord.id);
+        if (error) throw error;
 
-      await supabase.rpc('log_audit_action', {
-        _action_type: 'salary_recorded',
-        _details: { user_name: formUserName, month: formMonth, year: formYear, amount: formSalary },
-      });
+        await supabase.rpc('log_audit_action', {
+          _action_type: 'salary_updated',
+          _details: { id: editingRecord.id, user_name: formUserName, month: formMonth, year: formYear, amount: formSalary },
+        });
 
-      toast({ title: 'Salary Record Added' });
+        toast({ title: 'Salary Record Updated' });
+      } else {
+        const { error } = await supabase.from('salary_records').insert(recordData);
+        if (error) throw error;
+
+        await supabase.rpc('log_audit_action', {
+          _action_type: 'salary_recorded',
+          _details: { user_name: formUserName, month: formMonth, year: formYear, amount: formSalary },
+        });
+
+        toast({ title: 'Salary Record Added' });
+      }
+
       setDialogOpen(false);
       resetForm();
       fetchRecords();
@@ -132,6 +176,33 @@ const Salaries: React.FC = () => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteRecord = async () => {
+    if (!deleteRecord) return;
+    setDeleting(true);
+    try {
+      // If it was added to expenses, also delete the expense
+      if (deleteRecord.added_to_expenses && deleteRecord.expense_id) {
+        await supabase.from('expenses').delete().eq('id', deleteRecord.expense_id);
+      }
+
+      const { error } = await supabase.from('salary_records').delete().eq('id', deleteRecord.id);
+      if (error) throw error;
+
+      await supabase.rpc('log_audit_action', {
+        _action_type: 'salary_deleted',
+        _details: { user_name: deleteRecord.user_name, month: deleteRecord.month, year: deleteRecord.year, amount: deleteRecord.salary_amount },
+      });
+
+      toast({ title: 'Salary Record Deleted' });
+      setDeleteRecord(null);
+      fetchRecords();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -152,7 +223,6 @@ const Salaries: React.FC = () => {
 
   const handleAddToExpenses = async (record: SalaryRecord) => {
     try {
-      // First get or create a "Salaries" expense category
       let { data: categories } = await supabase
         .from('expense_categories')
         .select('id')
@@ -170,7 +240,6 @@ const Salaries: React.FC = () => {
         categoryId = newCat.id;
       }
 
-      // Add as expense
       const { data: expense, error: expErr } = await supabase
         .from('expenses')
         .insert({
@@ -184,7 +253,6 @@ const Salaries: React.FC = () => {
 
       if (expErr) throw expErr;
 
-      // Mark as added to expenses
       await supabase
         .from('salary_records')
         .update({ added_to_expenses: true, is_paid: true, expense_id: expense.id })
@@ -200,16 +268,6 @@ const Salaries: React.FC = () => {
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
-  };
-
-  const resetForm = () => {
-    setFormUserName('');
-    setFormUserId('');
-    setFormMonth((new Date().getMonth() + 1).toString());
-    setFormYear(new Date().getFullYear().toString());
-    setFormIncome('');
-    setFormSalary('');
-    setFormIsPaid(false);
   };
 
   const totalSalaries = records.reduce((sum, r) => sum + Number(r.salary_amount), 0);
@@ -246,7 +304,7 @@ const Salaries: React.FC = () => {
               </SelectContent>
             </Select>
             {isAdmin && (
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
                 <DialogTrigger asChild>
                   <Button variant="gradient" onClick={resetForm}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -255,7 +313,7 @@ const Salaries: React.FC = () => {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Add Salary Record</DialogTitle>
+                    <DialogTitle>{editingRecord ? 'Edit Salary Record' : 'Add Salary Record'}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4 pt-4">
                     <div>
@@ -342,9 +400,9 @@ const Salaries: React.FC = () => {
                       />
                       <Label htmlFor="isPaid">Already paid</Label>
                     </div>
-                    <Button onClick={handleAddRecord} disabled={saving} className="w-full" variant="gradient">
-                      {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-                      Add Record
+                    <Button onClick={handleSaveRecord} disabled={saving} className="w-full" variant="gradient">
+                      {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : editingRecord ? <Pencil className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                      {editingRecord ? 'Update Record' : 'Add Record'}
                     </Button>
                   </div>
                 </DialogContent>
@@ -477,7 +535,13 @@ const Salaries: React.FC = () => {
                         </TableCell>
                         {isAdmin && (
                           <TableCell>
-                            <div className="flex gap-2">
+                            <div className="flex gap-1.5">
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEditDialog(record)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => setDeleteRecord(record)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                               {!record.is_paid && (
                                 <Button size="sm" variant="outline" onClick={() => handleMarkPaid(record)}>
                                   Mark Paid
@@ -500,6 +564,30 @@ const Salaries: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteRecord} onOpenChange={(open) => !open && setDeleteRecord(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Salary Record</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the salary record for <strong>{deleteRecord?.user_name}</strong> ({deleteRecord ? MONTHS[deleteRecord.month - 1] : ''} {deleteRecord?.year})?
+              {deleteRecord?.added_to_expenses && (
+                <span className="block mt-2 text-destructive font-medium">
+                  This will also remove the associated ₦{Number(deleteRecord?.salary_amount).toLocaleString()} expense entry.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteRecord} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
